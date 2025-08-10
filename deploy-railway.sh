@@ -33,7 +33,11 @@ railway link
 
 # Add Redis service
 echo -e "${BLUE}Adding Redis service to Railway...${NC}"
-railway add -p redis
+echo -e "${YELLOW}Please add Redis service manually in Railway dashboard:${NC}"
+echo "1. Go to https://railway.app/project/2f42755f-4e46-4ffe-b09e-37f250eba910"
+echo "2. Click 'New' -> 'Database' -> 'Add Redis'"
+echo "3. Press Enter here once Redis is added..."
+read -p ""
 
 # Set environment variables
 echo -e "${GREEN}Setting up environment variables...${NC}"
