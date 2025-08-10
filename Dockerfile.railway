@@ -35,11 +35,11 @@ COPY erpc.prod.yaml /app/erpc.yaml
 # Copy entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh
 
-# Make everything executable
-RUN chmod +x /app/erpc /app/entrypoint.sh
+# Ensure entrypoint script and binary are executable
+RUN chmod 0755 /app/erpc /app/entrypoint.sh
 
 # Expose ports
 EXPOSE 4000 4001
 
-# Set a direct entrypoint to the binary
-ENTRYPOINT ["/app/erpc"]
+# Use the entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]
