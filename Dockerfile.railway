@@ -1,5 +1,7 @@
 # Build stage for Go
-FROM golang:1.23-alpine AS go-builder
+# syntax = docker/dockerfile:1.4
+
+FROM --platform=linux/amd64 golang:1.23-alpine AS go-builder
 
 WORKDIR /build
 
@@ -13,11 +15,11 @@ RUN go mod download
 # Copy the source code
 COPY . .
 
-# Build the Go binary
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o erpc ./cmd/erpc/main.go
+# Build the Go binary (force amd64 to match Railway runtimes)
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o erpc ./cmd/erpc/main.go
 
 # Final stage
-FROM alpine:latest
+FROM --platform=linux/amd64 alpine:latest
 
 # Install ca-certificates for HTTPS requests
 RUN apk --no-cache add ca-certificates
