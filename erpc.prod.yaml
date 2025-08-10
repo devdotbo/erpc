@@ -12,7 +12,7 @@ database:
       - id: redis-cache
         driver: redis
         redis:
-          addr: "${REDIS_URL}"
+          uri: "${REDIS_URL}"
       
       # PostgreSQL for permanent finalized data
       - id: postgres-cache
