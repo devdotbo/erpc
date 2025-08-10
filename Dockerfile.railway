@@ -1,9 +1,10 @@
-# syntax = docker/dockerfile:1.4
-
 # Build stage for Go
 FROM golang:1.23-alpine AS go-builder
 
 WORKDIR /build
+
+# Install build dependencies
+RUN apk add --no-cache git
 
 # Copy go mod and sum files first for better layer caching
 COPY go.mod go.sum ./
@@ -12,20 +13,11 @@ RUN go mod download
 # Copy the source code
 COPY . .
 
-# Set build arguments
-ARG VERSION=railway
-ARG COMMIT_SHA=railway
-
-# Set environment variables for Go build
-ENV CGO_ENABLED=0 \
-    GOOS=linux \
-    LDFLAGS="-w -s -X github.com/erpc/erpc/common.ErpcVersion=${VERSION} -X github.com/erpc/erpc/common.ErpcCommitSha=${COMMIT_SHA}"
-
 # Build the Go binary
-RUN go build -v -ldflags="$LDFLAGS" -a -installsuffix cgo -o erpc ./cmd/erpc/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o erpc ./cmd/erpc/main.go
 
 # Final stage
-FROM alpine:latest AS final
+FROM alpine:latest
 
 # Install ca-certificates for HTTPS requests
 RUN apk --no-cache add ca-certificates

@@ -3,7 +3,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile.railway"
 
 [deploy]
-startCommand = "./erpc"
+startCommand = "/app/erpc"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
