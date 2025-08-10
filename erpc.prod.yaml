@@ -1,0 +1,133 @@
+logLevel: ${LOG_LEVEL:-info}
+
+# Database Configuration for Caching
+database:
+  evmJsonRpcCache:
+    connectors:
+      - id: memory-cache
+        driver: memory
+        memory:
+          maxItems: 100000
+      
+      - id: redis-cache
+        driver: redis
+        redis:
+          addr: "${REDIS_URL}"
+    
+    policies:
+      # Real-time data (latest blocks) - short TTL in memory
+      - network: "*"
+        method: "*"
+        finality: realtime
+        empty: allow
+        connector: memory-cache
+        ttl: 2s
+      
+      # Unfinalized data - medium TTL in Redis
+      - network: "*"
+        method: "*"
+        finality: unfinalized
+        empty: allow
+        connector: redis-cache
+        ttl: 30s
+      
+      # Finalized data - longer TTL in Redis
+      - network: "*"
+        method: "*"
+        finality: finalized
+        empty: allow
+        connector: redis-cache
+        ttl: 24h
+
+# Server Configuration
+server:
+  httpHostV4: 0.0.0.0
+  httpPortV4: ${PORT:-4000}
+  maxTimeout: 30s
+
+# Metrics Configuration
+metrics:
+  enabled: true
+  hostV4: 0.0.0.0
+  port: ${METRICS_PORT:-4001}
+
+# Projects Configuration
+projects:
+  - id: main
+    networks:
+      # Base Network Configuration
+      - architecture: evm
+        evm:
+          chainId: 8453
+        failsafe:
+          timeout:
+            duration: 15s
+          retry:
+            maxAttempts: 3
+            delay: 500ms
+            backoffMaxDelay: 5s
+            backoffFactor: 2
+            jitter: 200ms
+          hedge:
+            delay: 2000ms
+            maxCount: 2
+      
+      # Optimism Network Configuration
+      - architecture: evm
+        evm:
+          chainId: 10
+        failsafe:
+          timeout:
+            duration: 15s
+          retry:
+            maxAttempts: 3
+            delay: 500ms
+            backoffMaxDelay: 5s
+            backoffFactor: 2
+            jitter: 200ms
+          hedge:
+            delay: 2000ms
+            maxCount: 2
+    
+    # Upstreams Configuration
+    upstreams:
+      # Ankr multi-chain support
+      - id: ankr-multi
+        endpoint: ankr://${ANKR_API_KEY}
+        rateLimitBudget: ankr-global
+        failsafe:
+          timeout:
+            duration: 10s
+          retry:
+            maxAttempts: 2
+            delay: 500ms
+            backoffMaxDelay: 3s
+            backoffFactor: 2
+            jitter: 100ms
+
+# Rate Limiters Configuration
+rateLimiters:
+  budgets:
+    - id: ankr-global
+      rules:
+        # Ankr rate limits - conservative settings
+        - method: '*'
+          maxCount: 100
+          period: 1s
+        
+        # Special limits for expensive methods
+        - method: 'eth_getLogs'
+          maxCount: 20
+          period: 1s
+        
+        - method: 'eth_newFilter'
+          maxCount: 10
+          period: 1s
+        
+        - method: 'debug_*'
+          maxCount: 5
+          period: 1s
+        
+        - method: 'trace_*'
+          maxCount: 5
+          period: 1s
