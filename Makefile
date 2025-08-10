@@ -89,11 +89,35 @@ fmt:
 .PHONY: docker-build
 docker-build:
 	$(eval platform ?= linux/amd64)
-	@docker build -t local/erpc-server --platform $(platform) --build-arg VERSION=local --build-arg COMMIT_SHA=$$(git rev-parse --short HEAD) .
+	@docker buildx build -t local/erpc-server --platform $(platform) --build-arg VERSION=local --build-arg COMMIT_SHA=$$(git rev-parse --short HEAD) --load -f Dockerfile .
 
 .PHONY: docker-run
 docker-run:
 	$(eval platform ?= linux/amd64)
 	@docker run --rm -it --platform $(platform) -p 4000:4000 -p 4001:4001 -v $(PWD)/erpc.yaml:/erpc.yaml local/erpc-server /erpc-server --config /erpc.yaml
+
+.PHONY: docker-buildx-cloud
+docker-buildx-cloud:
+	$(eval platforms ?= linux/amd64,linux/arm64)
+	$(eval tag ?= ghcr.io/erpc/erpc:local)
+	@docker buildx build \
+		--builder $$BUILDX_BUILDER \
+		--platform $(platforms) \
+		--tag $(tag) \
+		--push \
+		--build-arg VERSION=$$(git describe --tags --always --dirty || echo local) \
+		--build-arg COMMIT_SHA=$$(git rev-parse --short HEAD) \
+		-f Dockerfile.railway .
+
+.PHONY: docker-buildx-local
+docker-buildx-local:
+	$(eval platforms ?= linux/amd64)
+	@docker buildx build \
+		--platform $(platforms) \
+		--tag local/erpc-server:buildx \
+		--load \
+		--build-arg VERSION=local \
+		--build-arg COMMIT_SHA=$$(git rev-parse --short HEAD) \
+		-f Dockerfile.railway .
 
 .DEFAULT_GOAL := help

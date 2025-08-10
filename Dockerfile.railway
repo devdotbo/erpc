@@ -1,7 +1,7 @@
 # Build stage for Go
 # syntax = docker/dockerfile:1.4
 
-FROM --platform=linux/amd64 golang:1.23-alpine AS go-builder
+FROM golang:1.23-alpine AS go-builder
 
 WORKDIR /build
 
@@ -15,11 +15,15 @@ RUN go mod download
 # Copy the source code
 COPY . .
 
-# Build the Go binary (force amd64 to match Railway runtimes)
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o erpc ./cmd/erpc/main.go
+# Build the Go binary to a non-conflicting path (avoid clashing with repo dir 'erpc').
+# Use Buildx-provided TARGETOS/TARGETARCH for multi-arch builds.
+ARG TARGETOS
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -a -installsuffix cgo -o /build/erpc-server ./cmd/erpc/main.go
 
 # Final stage
-FROM --platform=linux/amd64 alpine:latest
+FROM alpine:latest
 
 # Install ca-certificates for HTTPS requests
 RUN apk --no-cache add ca-certificates
@@ -27,7 +31,7 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 
 # Copy the binary from builder
-COPY --from=go-builder /build/erpc /app/erpc
+COPY --from=go-builder /build/erpc-server /app/erpc
 
 # Copy the production config
 COPY erpc.prod.yaml /app/erpc.yaml
