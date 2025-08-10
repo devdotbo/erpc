@@ -39,5 +39,5 @@ RUN chmod +x /app/erpc /app/entrypoint.sh
 # Expose ports
 EXPOSE 4000 4001
 
-# Use shell script as entrypoint
-ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
+# Use shell directly with -c to avoid permission issues
+CMD ["/bin/sh", "-c", "/app/erpc"]
