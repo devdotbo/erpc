@@ -30,11 +30,14 @@ COPY --from=go-builder /build/erpc /app/erpc
 # Copy the production config
 COPY erpc.prod.yaml /app/erpc.yaml
 
-# Make binary executable
-RUN chmod +x /app/erpc
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+
+# Make everything executable
+RUN chmod +x /app/erpc /app/entrypoint.sh
 
 # Expose ports
 EXPOSE 4000 4001
 
-# Run the server
-CMD ["/app/erpc"]
+# Use shell script as entrypoint
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
