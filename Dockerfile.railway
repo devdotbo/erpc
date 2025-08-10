@@ -33,8 +33,8 @@ COPY --from=go-builder /build/erpc /app/erpc
 # Copy the production config
 COPY erpc.prod.yaml /app/erpc.yaml
 
-# Change ownership
-RUN chown -R erpc:erpc /app
+# Make binary executable and change ownership
+RUN chmod +x /app/erpc && chown -R erpc:erpc /app
 
 # Switch to non-root user
 USER erpc
