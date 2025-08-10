@@ -32,6 +32,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Run k6 performance tests**: `make run-k6-evm-tip-of-chain` or `make run-k6-evm-historical-randomized`
 - **Run fake RPCs for testing**: `make run-fake-rpcs`
 
+### Railway Deployment
+- **Link project**: `railway link`
+- **Deploy**: `railway up --detach`
+- **View logs**: `railway logs`
+- **Run with Railway env**: `railway run make run`
+- **Set variables**: `railway variables --set "KEY=value"`
+- **Comprehensive guide**: See `railway.md` for full Railway CLI documentation with all commands, troubleshooting, and automation scripts
+
 ## High-Level Architecture
 
 eRPC is a fault-tolerant EVM RPC proxy that sits between clients and blockchain nodes. It provides intelligent request routing, caching, failover, and consensus mechanisms.
@@ -125,6 +133,11 @@ The system uses a YAML configuration file (`erpc.yaml`) with these main sections
 - **upstreams**: RPC provider configurations with rate limits
 - **failsafe**: Circuit breaker, retry, and timeout policies
 
+Configuration files:
+- `erpc.dist.yaml`: Distribution template with example configuration
+- `erpc.prod.yaml`: Production configuration used in Docker/Railway
+- `erpc.yaml`: Local development configuration
+
 ## Important Implementation Notes
 
 1. **Never modify upstream objects directly** - always check for nil
@@ -135,9 +148,35 @@ The system uses a YAML configuration file (`erpc.yaml`) with these main sections
 6. **Consensus can be configured** per network with different participant requirements
 7. **Health tracking** influences upstream selection automatically
 
+## Request Flow
+
+1. Client sends JSON-RPC request to `/main/evm/{chainId}`
+2. Project router identifies the network configuration
+3. Network manager applies failsafe policies (timeout, retry, circuit breaker)
+4. Upstream selector chooses best available RPC provider based on health/latency
+5. Request is forwarded with rate limiting applied
+6. Response may be validated through consensus if configured
+7. Result is cached based on finality level
+8. Response returned to client with unified error handling
+
+## Deployment
+
+### Docker
+- Uses multi-stage build with Alpine base
+- Configuration: `Dockerfile.railway` for Railway, standard `Dockerfile` for local
+- Entrypoint: `/app/erpc` with `erpc.yaml` config
+
+### Railway
+- Configuration: `railway.toml` specifies Dockerfile
+- Environment variables managed via Railway CLI or dashboard
+- Supports Redis and PostgreSQL addons
+- See `deploy-railway.sh` for automated deployment
+
 ## Common Debugging Commands
 
 - View logs with different levels: `LOG_LEVEL=debug` or `LOG_LEVEL=trace`
 - Run specific test: `go test -run TestName ./... -v`
 - Check for race conditions: `go test -race ./...`
 - Profile with pprof: `make run-pprof` (builds with pprof support)
+- Test Railway build locally: `./test-railway-local.sh`
+- Monitor Railway deployment: `railway logs -f`
