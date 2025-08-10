@@ -14,12 +14,11 @@ database:
         redis:
           addr: "${REDIS_URL}"
       
-      # Optional: PostgreSQL for permanent finalized data
-      # Uncomment if DATABASE_URL is provided
-      # - id: postgres-cache
-      #   driver: postgresql
-      #   postgresql:
-      #     connectionUri: "${DATABASE_URL}"
+      # PostgreSQL for permanent finalized data
+      - id: postgres-cache
+        driver: postgresql
+        postgresql:
+          connectionUri: "${DATABASE_URL}"
     
     policies:
       # Real-time data (latest blocks) - short TTL in memory
@@ -38,13 +37,13 @@ database:
         connector: redis-cache
         ttl: 30s
       
-      # Finalized data - longer TTL in Redis
+      # Finalized data - permanent storage in PostgreSQL
       - network: "*"
         method: "*"
         finality: finalized
         empty: allow
-        connector: redis-cache
-        ttl: 24h
+        connector: postgres-cache
+        ttl: 0  # 0 means permanent storage
 
 # Server Configuration
 server:
